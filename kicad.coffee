@@ -1,4 +1,4 @@
-# kicad.js v0.0.1
+# kicad.js v0.0.2
 # (c) 2015 Ricardo (XenGi) Band
 
 color = {}
