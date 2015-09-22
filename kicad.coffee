@@ -37,9 +37,7 @@ draw_line = (c, line) ->
     c.stroke()
 
 
-window.draw_kicad = (element, data) ->
-    canvas = document.getElementById(element)
-
+draw_footprint = (canvas, data) ->
     if canvas.getContext
         context = canvas.getContext('2d')
 
@@ -58,16 +56,16 @@ window.draw_kicad = (element, data) ->
         pads = []
 
         # read pretty file
-        lines = data.split('\n')
-        for line in lines
-            line = line.trim()
+        prettylines = data.split('\n')
+        for l in prettylines
+            l = l.trim()
 
             # regex for fp_line
-            fp_line = /\(fp_line\ \(start\ ([-.\d]*)\ ([-.\d]*)\)\ \(end\ ([-.\d]*)\ ([-.\d]*)\)\ \(layer\ ([.a-zA-Z]*)\)\ \(width\ ([-.\d]*)\)\)/g
-            while((m = fp_line.exec(line)) != null)
+            rex_line = /\(fp_line\ \(start\ ([-.\d]*)\ ([-.\d]*)\)\ \(end\ ([-.\d]*)\ ([-.\d]*)\)\ \(layer\ ([.a-zA-Z]*)\)\ \(width\ ([-.\d]*)\)\)/g
+            while((m = rex_line.exec(l)) != null)
             # TODO: forgot what the next 2 lines do..
-                if (m.index == fp_line.lastIndex)
-                    fp_line.lastIndex++
+                if (m.index == rex_line.lastIndex)
+                    rex_line.lastIndex++
 
                 min_x = Math.min(m[1], m[3])
                 max_x = Math.max(m[1], m[3])
@@ -82,24 +80,37 @@ window.draw_kicad = (element, data) ->
                 if max_y > top
                     top = max_y
 
-                line = {}
-                line['x1'] = m[1]
-                line['y1'] = m[2]
-                line['x2'] = m[3]
-                line['y2'] = m[4]
-                line['layer'] = m[5]
-                line['width'] = m[6]
+                fp_line = {}
+                fp_line['x1'] = m[1]
+                fp_line['y1'] = m[2]
+                fp_line['x2'] = m[3]
+                fp_line['y2'] = m[4]
+                fp_line['layer'] = m[5]
+                fp_line['width'] = m[6]
 
-                fp_lines.push(line)
+                fp_lines.push(fp_line)
 
-            pad = /\(fp_line\ \(start\ ([-.\d]*)\ ([-.\d]*)\)\ \(end\ ([-.\d]*)\ ([-.\d]*)\)\ \(layer\ ([.a-zA-Z]*)\)\ \(width\ ([-.\d]*)\)\)/g
-            while((m = fp_line.exec(line)) != null)
+            rex_pad = /\(pad\ ([\d]*)\ ([_a-z]*)\ ([a-z]*)\ \(at\ ([-.\d]*)\ ([-.\d]*)\)\ \(size\ ([.\d]*)\ ([.\d]*)\)\ \(drill\ ([.\d]*)\)\ \(layers\ ([\w\d\s\.\*]*)\)\)/g
+            while((m = rex_pad.exec(l)) != null)
             # TODO: forgot what the next 2 lines do..
-                if (m.index == fp_line.lastIndex)
-                    fp_line.lastIndex++
+                if (m.index == rex_pad.lastIndex)
+                    rex_pad.lastIndex++
 
+                pad = {}
+                pad['num'] = m[1]
+                pad['type'] = m[2]
+                pad['shape'] = m[3]
+                pad['x'] = m[4]
+                pad['y'] = m[5]
+                pad['w'] = m[6]
+                pad['h'] = m[7]
+                pad['drill'] = m[8]
+                pad['layers'] = m[9].split(' ')
 
-        console.log("DEBUG: found #{fp_lines.length} lines")
+                pads.push(pad)
+
+        console.log("DEBUG: found #{fp_lines.length} fp_lines")
+        console.log("DEBUG: found #{pads.length} pads")
 
         cw = canvas.width / 2
         ch = canvas.height / 2
@@ -119,4 +130,12 @@ window.draw_kicad = (element, data) ->
             line['y2'] = line['y2'] * zoom + ch
             line['width'] *= zoom
             draw_line(context, line)
+
+
+# look for canvas elements with class kicad and draw them
+$ () ->
+    $('canvas.kicad').each (i, val) ->
+        if $(this).attr('data-kicad-footprint')
+            $.get $(this).attr('data-kicad-footprint'), (data) ->
+                draw_footprint(val, data)
 
