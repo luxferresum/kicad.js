@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>kicad.js</title>
+    </head>
+    <body>
+        <h1>kicad.js</h1>
+        <canvas id="kicad" width="480" height="320">
+            KiCAD.js viewer
+        </canvas>
+
+        <script src="jquery-2.1.4.js"></script>
+        <script src="kicad.js"></script>
+        <script>
+            $(function() {
+                $.get('/Teensy3.x_LC.kicad_mod', function(data) {
+                    draw_kicad('#kicad', data);
+                });
+            });
+        </script>
+    </body>
+</html>
+
