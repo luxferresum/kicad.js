@@ -43,3 +43,4 @@ element to draw on and the footprint file as a string.
 
 If everything works it should look like this:
 
+![screenshot](https://github.com/xengi/kicad.js/raw/master/screenshot.png "Screenshot")
