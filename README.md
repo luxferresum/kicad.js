@@ -1,6 +1,6 @@
 # kicad.js
 
-kicad footprint viewer
+kicad.js is a footprint viewer for KiCAD footprint files.
 
 ## Compilation
 
@@ -20,7 +20,7 @@ earlier versions. Maybe they work too.
 Here's a simple snippet that shows how to use kicad.js:
 
 ```
-<canvas id="kicadviewer" width="480" height="320"></canvas>
+<canvas id="kicad" width="480" height="320"></canvas>
 
 <script src="kicad.js"></script>
 <script>
