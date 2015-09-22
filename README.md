@@ -1,6 +1,6 @@
 # kicad.js
 
-kicad.js is a footprint viewer for KiCAD footprint files.
+kicad.js is a footprint viewer for [KiCAD](http://kicad-pcb.org/) footprint files.
 
 ## Compilation
 
