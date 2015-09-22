@@ -26,7 +26,7 @@ draw_line = (c, line) ->
                           #{color[line['layer']]['g']},
                           #{color[line['layer']]['b']},
                           1)"
-    c.lineWidth = 3.0
+    c.lineWidth = line['width']
     c.lineCap = 'square'
     c.beginPath()
     c.moveTo(line['x1'], line['y1'])
@@ -35,8 +35,6 @@ draw_line = (c, line) ->
 
 
 window.draw_kicad = (element, data) ->
-    if element.indexOf('#') == 0
-        element = element.substring(1)
     canvas = document.getElementById(element)
 
     if canvas.getContext
@@ -51,8 +49,10 @@ window.draw_kicad = (element, data) ->
         top = 0
         right = 0
         bottom = 0
+
         # save all lines in a list to draw them later
         fp_lines = []
+        pads = []
 
         # read pretty file
         lines = data.split('\n')
@@ -62,21 +62,22 @@ window.draw_kicad = (element, data) ->
             # regex for fp_line
             fp_line = /\(fp_line\ \(start\ ([-.\d]*)\ ([-.\d]*)\)\ \(end\ ([-.\d]*)\ ([-.\d]*)\)\ \(layer\ ([.a-zA-Z]*)\)\ \(width\ ([-.\d]*)\)\)/g
             while((m = fp_line.exec(line)) != null)
+            # TODO: forgot what the next 2 lines do..
                 if (m.index == fp_line.lastIndex)
                     fp_line.lastIndex++
 
-                min_x = Math.min.apply(Math, [m[1], m[3]])
-                max_x = Math.max.apply(Math, [m[1], m[3]])
-                min_y = Math.min.apply(Math, [m[2], m[4]])
-                max_y = Math.max.apply(Math, [m[2], m[4]])
+                min_x = Math.min(m[1], m[3])
+                max_x = Math.max(m[1], m[3])
+                min_y = Math.min(m[2], m[4])
+                max_y = Math.max(m[2], m[4])
                 if min_x < left
                     left = min_x
                 if max_x > right
                     right = max_x
-                if min_y < top
-                    top = min_y
-                if max_y > bottom
-                    bottom = max_y
+                if min_y < bottom
+                    bottom = min_y
+                if max_y > top
+                    top = max_y
 
                 line = {}
                 line['x1'] = m[1]
@@ -88,20 +89,31 @@ window.draw_kicad = (element, data) ->
 
                 fp_lines.push(line)
 
-        console.log("found #{fp_lines.length} lines")
-        console.log("left: #{left}; top: #{top}; right: #{right}; bottom: #{bottom}")
+            pad = /\(fp_line\ \(start\ ([-.\d]*)\ ([-.\d]*)\)\ \(end\ ([-.\d]*)\ ([-.\d]*)\)\ \(layer\ ([.a-zA-Z]*)\)\ \(width\ ([-.\d]*)\)\)/g
+            while((m = fp_line.exec(line)) != null)
+            # TODO: forgot what the next 2 lines do..
+                if (m.index == fp_line.lastIndex)
+                    fp_line.lastIndex++
+
+
+        console.log("DEBUG: found #{fp_lines.length} lines")
+
+        cw = canvas.width / 2
+        ch = canvas.height / 2
+
+        # calculate zoom factor
+        maxw = Math.max(Math.abs(left), Math.abs(right))
+        maxh = Math.max(Math.abs(top), Math.abs(bottom))
+        zoom = Math.min((cw-10)/maxw, (ch-10)/maxh)
+        console.log("DEBUG: max dimensions: left=#{left}; right=#{right}; top=#{top}; bottom=#{bottom}")
+        console.log("DEBUG: zoom: #{zoom}")
 
         for line in fp_lines
-            padding = 10
-            cw = (canvas.width - padding) / 2
-            ch = (canvas.height - padding) / 2
-            #line['x1'] = (cw * line['x1']) / max_x + cw
-            #line['y1'] = (ch * line['y1']) / max_y + ch
-            #line['x2'] = (cw * line['x2']) / max_x + cw
-            #line['y2'] = (ch * line['y2']) / max_y + ch
-            line['x1'] = line['x1'] * 10 + cw
-            line['y1'] = line['y1'] * 10 + ch
-            line['x2'] = line['x2'] * 10 + cw
-            line['y2'] = line['y2'] * 10 + ch
+            # translate coords
+            line['x1'] = line['x1'] * zoom + cw
+            line['y1'] = line['y1'] * zoom + ch
+            line['x2'] = line['x2'] * zoom + cw
+            line['y2'] = line['y2'] * zoom + ch
+            line['width'] *= zoom
             draw_line(context, line)
 
