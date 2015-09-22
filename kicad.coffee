@@ -1,3 +1,6 @@
+# kicad.js v0.0.1
+# (c) 2015 Ricardo (XenGi) Band
+
 color = {}
 color['Bg'] = {'r': 0, 'g': 0, 'b': 0}
 color['F.Cu'] = {'r': 132, 'g': 0, 'b': 0}
