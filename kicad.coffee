@@ -64,17 +64,30 @@ draw_pad = (c, pad) ->
     c.fillText(pad['num'], pad['x'], pad['y'])
 
 
-draw_line = (c, line) ->
-    c.strokeStyle = "rgba(#{color[line['layer']]['r']},
-                          #{color[line['layer']]['g']},
-                          #{color[line['layer']]['b']},
+draw_arc = (c, arc) ->
+    # TODO: implement me!
+    return
+
+
+draw_fpline = (c, fpline) ->
+    c.strokeStyle = "rgba(#{color[fpline['layer']]['r']},
+                          #{color[fpline['layer']]['g']},
+                          #{color[fpline['layer']]['b']},
                           1)"
-    c.lineWidth = line['width']
+    c.lineWidth = fpline['width']
     c.lineCap = 'square'
     c.beginPath()
-    c.moveTo(line['x1'], line['y1'])
-    c.lineTo(line['x2'], line['y2'])
+    c.moveTo(fpline['x1'], fpline['y1'])
+    c.lineTo(fpline['x2'], fpline['y2'])
     c.stroke()
+
+
+draw_fpcircle = (c, fpcircle) ->
+    c.strokeStyle = "rgba(#{color[fpcircle['layer']]['r']},
+                          #{color[fpcircle['layer']]['g']},
+                          #{color[fpcircle['layer']]['b']},
+                          1)"
+    c.lineWidth = fpcircle['width']
 
 
 draw_footprint = (canvas, data) ->
@@ -91,8 +104,23 @@ draw_footprint = (canvas, data) ->
         right = 0
         bottom = 0
 
+        update_dimensions = (x, y) ->
+            min_x = Math.min(x, y)
+            max_x = Math.max(x, y)
+            min_y = Math.min(x, y)
+            max_y = Math.max(x, y)
+            if min_x < left
+                left = min_x
+            if max_x > right
+                right = max_x
+            if min_y < bottom
+                bottom = min_y
+            if max_y > top
+                top = max_y
+
         # save all lines in a list to draw them later
         fp_lines = []
+        fp_circles = []
         pads = []
 
         # read pretty file
@@ -101,24 +129,13 @@ draw_footprint = (canvas, data) ->
             l = l.trim()
 
             # regex for fp_line
-            rex_line = /\(fp_line\ \(start\ ([-.\d]*)\ ([-.\d]*)\)\ \(end\ ([-.\d]*)\ ([-.\d]*)\)\ \(layer\ ([.a-zA-Z]*)\)\ \(width\ ([-.\d]*)\)\)/g
-            while((m = rex_line.exec(l)) != null)
+            regex_fpline = /\(fp_line\ \(start\ ([-.\d]*)\ ([-.\d]*)\)\ \(end\ ([-.\d]*)\ ([-.\d]*)\)\ \(layer\ ([.a-zA-Z]*)\)\ \(width\ ([-.\d]*)\)\)/g
+            while((m = regex_fpline.exec(l)) != null)
             # TODO: forgot what the next 2 lines do..
-                if (m.index == rex_line.lastIndex)
-                    rex_line.lastIndex++
+                if (m.index == regex_fpline.lastIndex)
+                    regex_fpline.lastIndex++
 
-                min_x = Math.min(m[1], m[3])
-                max_x = Math.max(m[1], m[3])
-                min_y = Math.min(m[2], m[4])
-                max_y = Math.max(m[2], m[4])
-                if min_x < left
-                    left = min_x
-                if max_x > right
-                    right = max_x
-                if min_y < bottom
-                    bottom = min_y
-                if max_y > top
-                    top = max_y
+                update_dimensions(m[1], m[3])
 
                 fp_line = {}
                 fp_line['x1'] = m[1]
@@ -130,11 +147,32 @@ draw_footprint = (canvas, data) ->
 
                 fp_lines.push(fp_line)
 
-            rex_pad = /\(pad\ ([\d]*)\ ([_a-z]*)\ ([a-z]*)\ \(at\ ([-.\d]*)\ ([-.\d]*)\)\ \(size\ ([.\d]*)\ ([.\d]*)\)\ \(drill\ ([.\d]*)\)\ \(layers\ ([\w\d\s\.\*]*)\)\)/g
-            while((m = rex_pad.exec(l)) != null)
+
+            regex_fpcircle = /\(fp_circle\ \(center\ ([-.\d]+)\ ([-.\d]+)\)\ \(end\ ([-.\d]+)\ ([-.\d]+)\)\ \(layer\ ([.\w]+)\)\ \(width\ ([.\d]+)\)\)/g
+            while((m = regex_fpcircle.exec(l)) != null)
+                if(m.index == regex_fpcircle.astIndex)
+                    regex_fpcircle.lastIndex++
+
+                update_dimensions(m[1], m[3])
+
+                fp_circle = {}
+                fp_circle['center_x'] = m[1]
+                fp_circle['center_y'] = m[2]
+                fp_circle['end_x'] = m[3]
+                fp_circle['end_y'] = m[4]
+                fp_circle['layer'] = m[5]
+                fp_circle['width'] = m[6]
+
+                fp_circles.push(fp_circle)
+
+
+            regex_pad = /\(pad\ ([\d]*)\ ([_a-z]*)\ ([a-z]*)\ \(at\ ([-.\d]*)\ ([-.\d]*)\)\ \(size\ ([.\d]*)\ ([.\d]*)\)\ \(drill\ ([.\d]*)\)\ \(layers\ ([\w\d\s\.\*]*)\)\)/g
+            while((m = regex_pad.exec(l)) != null)
             # TODO: forgot what the next 2 lines do..
-                if (m.index == rex_pad.lastIndex)
-                    rex_pad.lastIndex++
+                if (m.index == regex_pad.lastIndex)
+                    regex_pad.lastIndex++
+
+                update_dimensions(m[4], m[5])
 
                 pad = {}
                 pad['num'] = m[1]
@@ -150,27 +188,32 @@ draw_footprint = (canvas, data) ->
                 pads.push(pad)
 
         console.log("DEBUG: found #{fp_lines.length} fp_lines")
+        console.log("DEBUG: found #{fp_circles.length} fp_circles")
         console.log("DEBUG: found #{pads.length} pads")
 
+        # calculate zoom factor
         cw = canvas.width / 2
         ch = canvas.height / 2
-
-        # calculate zoom factor
         maxw = Math.max(Math.abs(left), Math.abs(right))
         maxh = Math.max(Math.abs(top), Math.abs(bottom))
         zoom = Math.min((cw-10)/maxw, (ch-10)/maxh)
+
         console.log("DEBUG: max dimensions: left=#{left}; right=#{right}; top=#{top}; bottom=#{bottom}")
         console.log("DEBUG: zoom: #{zoom}")
 
         # draw fp_lines
-        for line in fp_lines
+        for fpline in fp_lines
             # translate coords
-            line['x1'] = line['x1'] * zoom + cw
-            line['y1'] = line['y1'] * zoom + ch
-            line['x2'] = line['x2'] * zoom + cw
-            line['y2'] = line['y2'] * zoom + ch
-            line['width'] *= zoom
-            draw_line(context, line)
+            fpline['x1'] = fpline['x1'] * zoom + cw
+            fpline['y1'] = fpline['y1'] * zoom + ch
+            fpline['x2'] = fpline['x2'] * zoom + cw
+            fpline['y2'] = fpline['y2'] * zoom + ch
+            fpline['width'] *= zoom
+            draw_fpline(context, fpline)
+
+        # draw fp_circles
+        for fpcircle in fp_circles
+            draw_fpcircle(context, fpcircle)
 
         # draw pads
         for pad in pads
@@ -179,7 +222,6 @@ draw_footprint = (canvas, data) ->
             pad['width'] *= zoom
             pad['height'] *= zoom
             pad['drill'] *= zoom
-
             draw_pad(context, pad)
 
 # look for canvas elements with class kicad and draw them
