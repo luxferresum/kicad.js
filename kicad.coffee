@@ -1,6 +1,7 @@
 # kicad.js v0.1.0
 # (c) 2015 Ricardo (XenGi) Band
 
+
 color = {}
 color['Fg'] = {'r': 255, 'g': 255, 'b': 255}
 color['Bg'] = {'r': 0, 'g': 0, 'b': 0}
@@ -25,9 +26,25 @@ color['B.CrtYd'] = {'r': 0, 'g': 0, 'b': 0}
 color['F.Fab'] = {'r': 194, 'g': 194, 'b': 0}
 color['B.Fab'] = {'r': 132, 'g': 0, 'b': 0}
 
-draw_grid = (c, size) ->
-    # TODO: implement me!
-    return
+draw_grid = (c, size, w, h) ->
+    center_x = w / 2
+    center_y = h / 2
+    dots_x = parseInt(w / size)
+    dots_x += dots_x % 2
+    dots_y = parseInt(h / size)
+    dots_y += dots_y % 2
+    for x in [0..dots_x]
+        for y in [0..dots_y]
+            _x = x*size + center_x
+            _y = y*size + center_y
+            console.log("dot at #{_x},#{_y}")
+
+            c.beginPath()
+            c.strokeStyle = "rgba(132, 132, 132, 1)"
+            c.arc(_x - dots_x / 2 * size, _y - dots_y / 2 * size, 1, 0, 2 * Math.PI, false)
+            #c.lineWidth = 1
+            c.stroke()
+
 
 draw_fpline = (c, fpline) ->
     c.strokeStyle = "rgba(#{color[fpline['layer']]['r']},
@@ -236,7 +253,8 @@ draw_footprint = (canvas, data) ->
         console.log("DEBUG: zoom: #{zoom}")
 
 
-        draw_grid(context, 1.27)
+        # draw everything
+        draw_grid(context, 1.27 * zoom, canvas.width, canvas.height)
 
         for fpline in fp_lines
             # translate coords
