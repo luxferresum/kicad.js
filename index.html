@@ -5,11 +5,10 @@
     </head>
     <body>
         <h1>kicad.js</h1>
-        <canvas class="kicad" width="480" height="320">
-            KiCAD.js viewer
-        </canvas>
+        <canvas class="kicad" data-kicad-footprint="/Teensy3.x_LC.kicad_mod" width="480" height="320"></canvas>
+        <canvas class="kicad" data-kicad-footprint="/Cherry_MX_Switch.kicad_mod" width="480" height="320"></canvas>
 
-        <script src="jquery.min.js"></script>
+        <script src="jquery-2.1.4.min.js"></script>
         <script src="kicad.js"></script>
         <script>
             (() => {
@@ -20,7 +19,7 @@
                 let canvas = $('.kicad')[0];
                 let kicad = new Kicad(canvas, options);
 
-                Promise.resolve($.get('/AK300-3.kicad_mod')).then(data => {
+                Promise.resolve($.get('/Teensy3.x_LC.kicad_mod')).then(data => {
                     kicad.load(data);
                     kicad.render();
                 });
